@@ -29,13 +29,15 @@ import {
   getThisMonthRange,
   getThisQuarterRange,
 } from "@/utils";
+import TransactionModal from "@/components/ui/dialogue";
 
 const Transactions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTimeRange, setSelectedTimeRange] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
   const [transactions, setTransactions] = useState([]);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [paginationDetails, setPaginationDetails] = useState({
     hasNextPage: false,
     currentPage: 0,
@@ -64,7 +66,7 @@ const Transactions = () => {
         routeUserToHome(error, dispatch);
       }
     },
-    [currentPage]
+    [paginationDetails, transactions]
   );
 
   useLayoutEffect(() => {
@@ -77,8 +79,56 @@ const Transactions = () => {
     getTrxns();
   }, []);
 
-  const buildQueryString = () => {
-    let query = `?page=${currentPage}&limit=10`;
+  const handleTransactionAddEdit = async (formData) => {
+    if (formData.id) {
+      handleTransactionEdit(formData);
+    } else {
+      handleAddTransaction(formData);
+    }
+  };
+
+  const handleAddTransaction = async (formData) => {
+    try {
+      const response = await transactionService.addTransaction(formData);
+      if (response.status === 200 || response.status === 201) {
+        setOpenEditModal(false);
+        // toast.success("Transaction updated successfully");
+        const txns = await getTransactions();
+        if (Array.isArray(txns) && txns.length !== 0) {
+          setTransactions(txns);
+        }
+      }
+    } catch (error) {
+      // toast.error("Something went wrong");
+      console.log(error);
+    }
+  };
+
+  const handleTransactionEdit = async (formData) => {
+    try {
+      const response = await transactionService.editTransaction(
+        formData._id,
+        formData
+      );
+      if (response.status === 200) {
+        setOpenEditModal(false);
+        // toast.success("Transaction updated successfully");
+        const txns = await getTransactions();
+        if (Array.isArray(txns) && txns.length !== 0) {
+          setTransactions(txns);
+        }
+      }
+    } catch (error) {
+      // toast.error("Something went wrong");
+      console.log(error);
+    }
+  };
+
+  const buildEditQueryString = () => {
+    let query = "?";
+    if (searchQuery) {
+      query += `merchant=${searchQuery}`;
+    }
     if (selectedCategory !== "all") {
       query += `&type=${selectedCategory}`;
     }
@@ -94,14 +144,16 @@ const Transactions = () => {
         query += `&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
       }
     }
-    if (searchQuery) {
-      query += `&merchant=${searchQuery}`;
-    }
+    return query;
+  };
+
+  const buildQueryString = () => {
+    let query = "";
+    query = `?page=${paginationDetails.currentPage + 1}&limit=10`;
     return query;
   };
 
   const loadMoreTransactions = async () => {
-    setCurrentPage((prev) => prev + 1);
     const query = buildQueryString();
     const txns = await getTransactions(query);
     if (Array.isArray(txns) && txns.length !== 0) {
@@ -110,8 +162,7 @@ const Transactions = () => {
   };
 
   const handleSearch = async () => {
-    setCurrentPage(1);
-    const query = buildQueryString();
+    const query = buildEditQueryString();
     const txns = await getTransactions(query);
     if (Array.isArray(txns) && txns.length !== 0) {
       setTransactions(txns);
@@ -132,15 +183,33 @@ const Transactions = () => {
   //   return matchesSearch && matchesCategory;
   // });
 
+  const deleteTransaction = async (id: string) => {
+    try {
+      const response = await transactionService.deleteTransaction(id);
+      if (response.status === 200) {
+        // toast.success("Transaction deleted successfully");
+        const txns = await getTransactions();
+        if (Array.isArray(txns) && txns.length !== 0) {
+          setTransactions(txns);
+        }
+      }
+    } catch (error) {
+      // toast.error("Something went wrong");
+      console.log(error);
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      food: "bg-green-100 text-green-800 border-green-200",
+      // food: "bg-green-100 text-green-800 border-green-200",
       transfer: "bg-blue-100 text-blue-800 border-blue-200",
       purchase: "bg-purple-100 text-purple-800 border-purple-200",
       bill_payment: "bg-red-100 text-red-800 border-red-200",
       other: "bg-grey-100 text-grey-800 border-grey-200",
       entertainment: "bg-pink-100 text-pink-800 border-pink-200",
       fuel: "bg-orange-100 text-orange-800 border-orange-200",
+      subscription: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      refund: "bg-teal-100 text-teal-800 border-teal-200",
     };
     return colors[category] || "bg-gray-100 text-gray-800 border-gray-200";
   };
@@ -179,7 +248,7 @@ const Transactions = () => {
               <div>
                 <h1 className="text-2xl font-bold">All Transactions</h1>
                 <p className="text-muted-foreground">
-                  {transactions.length} transactions found
+                  {paginationDetails.totalTransactions} transactions found
                 </p>
               </div>
             </div>
@@ -188,12 +257,16 @@ const Transactions = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Export
               </Button> */}
-              <Link to="/transactions/add">
-                <Button variant="financial" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Transaction
-                </Button>
-              </Link>
+              {/* <Link to="/transactions/"> */}
+              <Button
+                variant="financial"
+                size="sm"
+                onClick={() => setOpenEditModal(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Transaction
+              </Button>
+              {/* </Link> */}
             </div>
           </div>
         </div>
@@ -313,13 +386,21 @@ const Transactions = () => {
                       </div>
 
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setOpenEditModal(true);
+                            setSelectedTransaction(transaction);
+                          }}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-destructive hover:text-destructive"
+                          onClick={() => deleteTransaction(transaction._id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -351,6 +432,12 @@ const Transactions = () => {
           </div>
         )}
       </div>
+      <TransactionModal
+        open={openEditModal}
+        onOpenChange={setOpenEditModal}
+        onSubmit={handleTransactionAddEdit}
+        defaultValues={selectedTransaction}
+      />
     </div>
   );
 };

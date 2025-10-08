@@ -26,14 +26,14 @@ import {
   Bell,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { transactionService } from "@/services/transaction";
 import { PastMonthTransactions, TypeStat, weekDataType } from "@/types";
 import { CATEGORIES, CATEGORY_COLORS } from "@/constants";
-import { getPastMonths, routeUserToHome } from "@/utils";
+import { routeUserToHome } from "@/utils";
 import { useAppDispatch } from "@/store/hooks";
-import { get } from "http";
 import { format } from "date-fns";
+import TransactionModal from "@/components/ui/dialogue";
 
 const Dashboard = () => {
   const [pastMonthTransactions, setPastMonthsTransactions] =
@@ -46,15 +46,10 @@ const Dashboard = () => {
       year: null,
     });
   const [transactions, setTransactions] = useState([]);
+  const [openEditModal, setOpenEditModal] = useState(false);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dispatch = useAppDispatch();
-
-  // const monthlyData = pastMonthTransactions?.monthlyStats?.map((stat) => ({
-  //   month: new Date(stat._id.month, 0).toLocaleString("default", {
-  //     month: "long",
-  //   }),
-  //   amount: stat.totalAmount,
-  // }));
 
   const weeklyData = [
     { day: "Mon", amount: 0 },
@@ -73,28 +68,20 @@ const Dashboard = () => {
     }
   });
 
-  useLayoutEffect(() => {
-    const getPastTransactions = async () => {
-      try {
-        const response = await transactionService.getPastTransactions();
-        setPastMonthsTransactions(response.data);
-      } catch (error) {
-        routeUserToHome(error, dispatch);
-      }
-    };
-    getPastTransactions();
-  }, []);
+  const fetchDashboardData = async () => {
+    try {
+      const pastTxnRes = await transactionService.getPastTransactions();
+      setPastMonthsTransactions(pastTxnRes.data);
 
-  useLayoutEffect(() => {
-    const getTransactions = async () => {
-      try {
-        const response = await transactionService.getTransactions("");
-        setTransactions(response?.data?.transactions || []);
-      } catch (error) {
-        routeUserToHome(error, dispatch);
-      }
-    };
-    getTransactions();
+      const txnRes = await transactionService.getTransactions("");
+      setTransactions(txnRes?.data?.transactions || []);
+    } catch (error) {
+      routeUserToHome(error, dispatch);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
 
   const monthlyData = pastMonthTransactions?.monthlyStats.map((item) => {
@@ -107,15 +94,32 @@ const Dashboard = () => {
     };
   });
 
+  const handleAddTransaction = async (formData) => {
+    try {
+      const response = await transactionService.addTransaction(formData);
+      if (response.status === 200 || response.status === 201) {
+        setOpenEditModal(false);
+        // toast.success("Transaction updated successfully");
+        await fetchDashboardData();
+      }
+    } catch (error) {
+      // toast.error("Something went wrong");
+      console.log(error);
+    }
+  };
+
   const totalSpent = pastMonthTransactions?.totalStats[0]?.totalAmount || 0;
+
   const thisMonthSpent =
     pastMonthTransactions?.lastMonthStats[0]?.totalAmount || 0;
+
   const lastMonthSpent =
     (pastMonthTransactions?.monthlyStats?.length &&
       pastMonthTransactions?.monthlyStats?.find(
         (stat) => stat._id?.month === new Date().getMonth()
       )?.totalAmount) ||
     0;
+
   const percentageChange =
     ((thisMonthSpent - lastMonthSpent) / lastMonthSpent) * 100;
 
@@ -140,321 +144,330 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-background relative overflow-hidden">
-      {/* Animated background patterns */}
-      <div className="absolute inset-0 bg-pattern-dots opacity-30 animate-pulse" />
-      <div
-        className="absolute top-0 left-0 w-96 h-96 bg-gradient-accent rounded-full blur-3xl opacity-20 animate-pulse"
-        style={{ animationDelay: "0s" }}
-      />
-      <div
-        className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-primary rounded-full blur-3xl opacity-10 animate-pulse"
-        style={{ animationDelay: "2s" }}
-      />
-      <div
-        className="absolute top-1/2 left-1/3 w-64 h-64 bg-gradient-success rounded-full blur-2xl opacity-15 animate-pulse"
-        style={{ animationDelay: "4s" }}
-      />
+    <>
+      <div className="min-h-screen bg-gradient-background relative overflow-hidden">
+        <div className="absolute inset-0 bg-pattern-dots opacity-30 animate-pulse" />
+        <div
+          className="absolute top-0 left-0 w-96 h-96 bg-gradient-accent rounded-full blur-3xl opacity-20 animate-pulse"
+          style={{ animationDelay: "0s" }}
+        />
+        <div
+          className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-primary rounded-full blur-3xl opacity-10 animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/3 w-64 h-64 bg-gradient-success rounded-full blur-2xl opacity-15 animate-pulse"
+          style={{ animationDelay: "4s" }}
+        />
 
-      {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-50 shadow-soft">
-        <div className="mobile-container py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="lg:hidden"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              >
-                <Menu className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  Expense Dashboard
-                </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-                  Welcome back! Here's your financial overview.
-                </p>
+        {/* Header */}
+        <header className="border-b bg-card/80 backdrop-blur-lg sticky top-0 z-50 shadow-soft">
+          <div className="mobile-container py-3 sm:py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 sm:gap-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="lg:hidden"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
+                <div>
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    Expense Dashboard
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
+                    Welcome back! Here's your financial overview.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2 sm:gap-3">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
-                <Bell className="w-4 h-4 mr-2" />
-                <span className="hidden lg:inline">Alerts</span>
-              </Button>
-              <Button variant="outline" size="sm" className="hidden sm:flex">
-                <Mail className="w-4 h-4 mr-2" />
-                <span className="hidden lg:inline">Sync Email</span>
-              </Button>
-              <Link to="/transactions/add">
-                <Button variant="financial" size="sm">
+              <div className="flex gap-2 sm:gap-3">
+                {/* <Button variant="ghost" size="sm" className="hidden sm:flex">
+                  <Bell className="w-4 h-4 mr-2" />
+                  <span className="hidden lg:inline">Alerts</span>
+                </Button> */}
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span className="hidden lg:inline">Sync Email</span>
+                </Button>
+                {/* <Link to="/transactions/add"> */}
+                <Button
+                  variant="financial"
+                  size="sm"
+                  onClick={() => setOpenEditModal(true)}
+                >
                   <Plus className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Add Expense</span>
                 </Button>
-              </Link>
+                {/* </Link> */}
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <div className="mobile-container py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8 relative z-10">
-        {/* ... keep existing code */}
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Total Spent
-                </p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  ₹{totalSpent.toLocaleString()}
-                </p>
-              </div>
-              <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            </div>
-          </Card>
-
-          <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  This Month
-                </p>
-                <>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    ₹{thisMonthSpent.toLocaleString()}
+        <div className="mobile-container py-4 sm:py-6 lg:py-8 space-y-6 sm:space-y-8 relative z-10">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+            <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Total Spent
                   </p>
-                  {lastMonthSpent > 0 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      {percentageChange > 0 ? (
-                        <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
-                      ) : (
-                        <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
-                      )}
-                      <span
-                        className={`text-xs sm:text-sm ${
-                          percentageChange > 0
-                            ? "text-destructive"
-                            : "text-success"
-                        }`}
-                      >
-                        {Math.abs(percentageChange).toFixed(1)}%
-                      </span>
-                    </div>
-                  )}
-                </>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    ₹{totalSpent.toLocaleString()}
+                  </p>
+                </div>
+                <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
               </div>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Avg Daily
-                </p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  ₹{dailySpendAverage.toLocaleString()}
-                </p>
+            <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    This Month
+                  </p>
+                  <>
+                    <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                      ₹{thisMonthSpent.toLocaleString()}
+                    </p>
+                    {lastMonthSpent > 0 && (
+                      <div className="flex items-center gap-1 mt-1">
+                        {percentageChange > 0 ? (
+                          <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
+                        )}
+                        <span
+                          className={`text-xs sm:text-sm ${
+                            percentageChange > 0
+                              ? "text-destructive"
+                              : "text-success"
+                          }`}
+                        >
+                          {Math.abs(percentageChange).toFixed(1)}%
+                        </span>
+                      </div>
+                    )}
+                  </>
+                </div>
               </div>
-              <PiggyBank className="w-6 h-6 sm:w-8 sm:h-8 text-success" />
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Categories
-                </p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold">
-                  {categoriesCount.toLocaleString()}
-                </p>
+            <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Avg Daily
+                  </p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    ₹{dailySpendAverage.toLocaleString()}
+                  </p>
+                </div>
+                <PiggyBank className="w-6 h-6 sm:w-8 sm:h-8 text-success" />
               </div>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-primary rounded-full flex items-center justify-center">
-                <span className="text-primary-foreground text-xs sm:text-sm font-bold">
-                  {Object.keys(CATEGORIES).length}
-                </span>
-              </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-          {/* Spending by Category */}
-          <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-colorful backdrop-blur-sm">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
-              Spending by Category
-            </h3>
-            <div className="h-64 sm:h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={window.innerWidth < 640 ? 40 : 60}
-                    outerRadius={window.innerWidth < 640 ? 80 : 120}
-                    // paddingAngle={0}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => [
-                      `₹${value.toLocaleString()}`,
-                      "Amount",
-                    ]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-              {categoryData.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 text-xs sm:text-sm"
-                >
-                  <div
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="text-muted-foreground truncate">
-                    {item.name}
+            <Card className="p-3 sm:p-4 lg:p-6 bg-gradient-card border-0 shadow-colorful hover:shadow-glow transition-all duration-300 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Categories
+                  </p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold">
+                    {categoriesCount.toLocaleString()}
+                  </p>
+                </div>
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-primary rounded-full flex items-center justify-center">
+                  <span className="text-primary-foreground text-xs sm:text-sm font-bold">
+                    {Object.keys(CATEGORIES).length}
                   </span>
                 </div>
-              ))}
-            </div>
-          </Card>
+              </div>
+            </Card>
+          </div>
 
-          {/* Spending Timeline */}
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+            {/* Spending by Category */}
+            <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-colorful backdrop-blur-sm">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+                Spending by Category
+              </h3>
+              <div className="h-64 sm:h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={window.innerWidth < 640 ? 40 : 60}
+                      outerRadius={window.innerWidth < 640 ? 80 : 120}
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [
+                        `₹${value.toLocaleString()}`,
+                        "Amount",
+                      ]}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+                {categoryData.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-xs sm:text-sm"
+                  >
+                    <div
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-muted-foreground truncate">
+                      {item.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Spending Timeline */}
+            <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-colorful backdrop-blur-sm">
+              <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+                Spending Timeline
+              </h3>
+              <Tabs defaultValue="weekly" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="weekly" className="text-xs sm:text-sm">
+                    This Week
+                  </TabsTrigger>
+                  <TabsTrigger value="monthly" className="text-xs sm:text-sm">
+                    6 Months
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="weekly" className="h-64 sm:h-80 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={weeklyData}
+                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="day" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip
+                        formatter={(value) => [
+                          `₹${value.toLocaleString()}`,
+                          "Amount",
+                        ]}
+                      />
+                      <Bar
+                        dataKey="amount"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </TabsContent>
+                <TabsContent value="monthly" className="h-64 sm:h-80 mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={monthlyData}
+                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="month" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip
+                        formatter={(value) => [
+                          `₹${value.toLocaleString()}`,
+                          "Amount",
+                        ]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={3}
+                        dot={{
+                          fill: "hsl(var(--primary))",
+                          strokeWidth: 2,
+                          r: 6,
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </TabsContent>
+              </Tabs>
+            </Card>
+          </div>
+
+          {/* Recent Transactions */}
           <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-colorful backdrop-blur-sm">
-            <h3 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
-              Spending Timeline
-            </h3>
-            <Tabs defaultValue="weekly" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="weekly" className="text-xs sm:text-sm">
-                  This Week
-                </TabsTrigger>
-                <TabsTrigger value="monthly" className="text-xs sm:text-sm">
-                  6 Months
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="weekly" className="h-64 sm:h-80 mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={weeklyData}
-                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="day" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip
-                      formatter={(value) => [
-                        `₹${value.toLocaleString()}`,
-                        "Amount",
-                      ]}
-                    />
-                    <Bar
-                      dataKey="amount"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </TabsContent>
-              <TabsContent value="monthly" className="h-64 sm:h-80 mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={monthlyData}
-                    margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                    <XAxis dataKey="month" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip
-                      formatter={(value) => [
-                        `₹${value.toLocaleString()}`,
-                        "Amount",
-                      ]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      dot={{
-                        fill: "hsl(var(--primary))",
-                        strokeWidth: 2,
-                        r: 6,
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </TabsContent>
-            </Tabs>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-semibold">
+                Recent Transactions
+              </h3>
+              <Link to="/transactions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs sm:text-sm"
+                >
+                  View All
+                </Button>
+              </Link>
+            </div>
+            {transactions && (
+              <div className="space-y-3 sm:space-y-4">
+                {transactions.map((transaction) => {
+                  const transaction_date = new Date(
+                    transaction.transactionDate
+                  ).toLocaleDateString();
+                  return (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 sm:p-4 bg-background/50 rounded-lg border hover:shadow-soft transition-all duration-200 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                          <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">
+                            {transaction.merchant}
+                          </p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {transaction.transactionType} • {transaction_date}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-semibold text-sm sm:text-base">
+                          ₹{transaction.amount.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
         </div>
-
-        {/* Recent Transactions */}
-        <Card className="p-4 sm:p-6 bg-gradient-card border-0 shadow-colorful backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h3 className="text-lg sm:text-xl font-semibold">
-              Recent Transactions
-            </h3>
-            <Link to="/transactions">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs sm:text-sm"
-              >
-                View All
-              </Button>
-            </Link>
-          </div>
-          {transactions && (
-            <div className="space-y-3 sm:space-y-4">
-              {transactions.map((transaction) => {
-                const transaction_date = new Date(
-                  transaction.transactionDate
-                ).toLocaleDateString();
-                return (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-3 sm:p-4 bg-background/50 rounded-lg border hover:shadow-soft transition-all duration-200 backdrop-blur-sm"
-                  >
-                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm sm:text-base truncate">
-                          {transaction.merchant}
-                        </p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                          {transaction.transactionType} • {transaction_date}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="font-semibold text-sm sm:text-base">
-                        ₹{transaction.amount.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
       </div>
-    </div>
+      <TransactionModal
+        open={openEditModal}
+        onOpenChange={setOpenEditModal}
+        onSubmit={handleAddTransaction}
+        // defaultValues={selectedTransaction}
+      />
+    </>
   );
 };
 
