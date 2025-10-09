@@ -58,6 +58,7 @@ const App = () => (
               </Routes>
             </BrowserRouter>
           </TooltipProvider>
+          <Toaster />
         </QueryClientProvider>
       </AuthBootstrap>
     </PersistGate>

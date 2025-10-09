@@ -31,9 +31,11 @@ import { transactionService } from "@/services/transaction";
 import { PastMonthTransactions, TypeStat, weekDataType } from "@/types";
 import { CATEGORIES, CATEGORY_COLORS } from "@/constants";
 import { routeUserToHome } from "@/utils";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { format } from "date-fns";
 import TransactionModal from "@/components/ui/dialogue";
+import { syncTransactions } from "@/store/slices/transactionSlice";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const [pastMonthTransactions, setPastMonthsTransactions] =
@@ -45,11 +47,16 @@ const Dashboard = () => {
       weekData: [],
       year: null,
     });
-  const [transactions, setTransactions] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [openEditModal, setOpenEditModal] = useState(false);
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dispatch = useAppDispatch();
+
+  const user = useAppSelector((state) => state.auth.user);
+  const { transactions, loading, error } = useAppSelector(
+    (state) => state.transactions
+  );
 
   const weeklyData = [
     { day: "Mon", amount: 0 },
@@ -68,21 +75,62 @@ const Dashboard = () => {
     }
   });
 
+  const handleSyncEmail = async () => {
+    const lastSyncDate = user.lastSyncDate
+      ? user.lastSyncDate.split("T")[0]
+      : "";
+    const date = new Date();
+    // if (user && lastSyncDate && lastSyncDate === format(date, "yyyy-MM-dd")) {
+    //   toast({
+    //     title: "Already Synced",
+    //     description: "You have already synced your emails today.",
+    //     variant: "destructive", // or "destructive"
+    //   });
+
+    //   return;
+    // }
+    // Sync user's email
+    const response = await dispatch(
+      syncTransactions({
+        maxResults: 50,
+        syncAll: false,
+      })
+    );
+    const payload = response.payload as {
+      transactionCount: number | { message?: string };
+    };
+    if (payload.transactionCount) {
+      toast({
+        title: "Email Sync Successful",
+        description:
+          typeof payload.transactionCount === "object" &&
+          "message" in payload.transactionCount
+            ? payload.transactionCount.message
+            : `Fetched ${payload.transactionCount} new transactions.`,
+        variant: "success",
+      });
+    }
+  };
   const fetchDashboardData = async () => {
     try {
       const pastTxnRes = await transactionService.getPastTransactions();
       setPastMonthsTransactions(pastTxnRes.data);
 
       const txnRes = await transactionService.getTransactions("");
-      setTransactions(txnRes?.data?.transactions || []);
+      setAllTransactions(txnRes?.data?.transactions || []);
     } catch (error) {
       routeUserToHome(error, dispatch);
+      toast({
+        title: "Failed to fetch data",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [transactions]);
 
   const monthlyData = pastMonthTransactions?.monthlyStats.map((item) => {
     const currentYear = new Date().getFullYear();
@@ -99,11 +147,19 @@ const Dashboard = () => {
       const response = await transactionService.addTransaction(formData);
       if (response.status === 200 || response.status === 201) {
         setOpenEditModal(false);
-        // toast.success("Transaction updated successfully");
+        toast({
+          title: "Transaction Added",
+          description: "The transaction has been added successfully.",
+          variant: "success",
+        });
         await fetchDashboardData();
       }
     } catch (error) {
-      // toast.error("Something went wrong");
+      toast({
+        title: "Failed to Add Transaction",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       console.log(error);
     }
   };
@@ -187,9 +243,27 @@ const Dashboard = () => {
                   <Bell className="w-4 h-4 mr-2" />
                   <span className="hidden lg:inline">Alerts</span>
                 </Button> */}
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Mail className="w-4 h-4 mr-2" />
-                  <span className="hidden lg:inline">Sync Email</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:flex"
+                  onClick={handleSyncEmail}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <div
+                        className="spinner"
+                        style={{ marginRight: "8px" }}
+                      ></div>
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      <span className="hidden lg:inline">Sync Email</span>
+                    </>
+                  )}
                 </Button>
                 {/* <Link to="/transactions/add"> */}
                 <Button
@@ -349,7 +423,7 @@ const Dashboard = () => {
                     This Week
                   </TabsTrigger>
                   <TabsTrigger value="monthly" className="text-xs sm:text-sm">
-                    6 Months
+                    Past Months
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="weekly" className="h-64 sm:h-80 mt-4">
@@ -424,9 +498,9 @@ const Dashboard = () => {
                 </Button>
               </Link>
             </div>
-            {transactions && (
+            {allTransactions && (
               <div className="space-y-3 sm:space-y-4">
-                {transactions.map((transaction) => {
+                {allTransactions.map((transaction) => {
                   const transaction_date = new Date(
                     transaction.transactionDate
                   ).toLocaleDateString();

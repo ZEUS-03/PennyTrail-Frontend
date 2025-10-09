@@ -26,6 +26,17 @@ export type weekDataType = {
   totalAmount: number;
 };
 
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  picture: string;
+  totalEmails: number;
+  transactionalEmails: number;
+  lastSyncDate: string;
+  syncInProgress: boolean;
+};
+
 export interface PastMonthTransactions {
   lastMonthStats:
     | [

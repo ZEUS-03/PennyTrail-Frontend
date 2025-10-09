@@ -30,6 +30,7 @@ import {
   getThisQuarterRange,
 } from "@/utils";
 import TransactionModal from "@/components/ui/dialogue";
+import { toast } from "@/hooks/use-toast";
 
 const Transactions = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,6 +64,11 @@ const Transactions = () => {
         }));
         return txns;
       } catch (error) {
+        toast({
+          title: "Failed to fetch data",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
         routeUserToHome(error, dispatch);
       }
     },
@@ -92,7 +98,11 @@ const Transactions = () => {
       const response = await transactionService.addTransaction(formData);
       if (response.status === 200 || response.status === 201) {
         setOpenEditModal(false);
-        // toast.success("Transaction updated successfully");
+        toast({
+          title: "Transaction Added",
+          description: "The transaction has been added successfully.",
+          variant: "success",
+        });
         const txns = await getTransactions();
         if (Array.isArray(txns) && txns.length !== 0) {
           setTransactions(txns);
@@ -100,6 +110,11 @@ const Transactions = () => {
       }
     } catch (error) {
       // toast.error("Something went wrong");
+      toast({
+        title: "Failed to Add Transaction",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       console.log(error);
     }
   };
@@ -112,14 +127,22 @@ const Transactions = () => {
       );
       if (response.status === 200) {
         setOpenEditModal(false);
-        // toast.success("Transaction updated successfully");
+        toast({
+          title: "Transaction Updated",
+          description: "The transaction has been updated successfully.",
+          variant: "success",
+        });
         const txns = await getTransactions();
         if (Array.isArray(txns) && txns.length !== 0) {
           setTransactions(txns);
         }
       }
     } catch (error) {
-      // toast.error("Something went wrong");
+      toast({
+        title: "Failed to Update Transaction",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       console.log(error);
     }
   };
@@ -162,12 +185,20 @@ const Transactions = () => {
   };
 
   const handleSearch = async () => {
-    const query = buildEditQueryString();
-    const txns = await getTransactions(query);
-    if (Array.isArray(txns) && txns.length !== 0) {
-      setTransactions(txns);
-    } else {
-      setTransactions([]);
+    try {
+      const query = buildEditQueryString();
+      const txns = await getTransactions(query);
+      if (Array.isArray(txns) && txns.length !== 0) {
+        setTransactions(txns);
+      } else {
+        setTransactions([]);
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to Search Transactions",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -187,14 +218,22 @@ const Transactions = () => {
     try {
       const response = await transactionService.deleteTransaction(id);
       if (response.status === 200) {
-        // toast.success("Transaction deleted successfully");
+        toast({
+          title: "Transaction Deleted",
+          description: "The transaction has been deleted successfully.",
+          variant: "success",
+        });
         const txns = await getTransactions();
         if (Array.isArray(txns) && txns.length !== 0) {
           setTransactions(txns);
         }
       }
     } catch (error) {
-      // toast.error("Something went wrong");
+      toast({
+        title: "Failed to Delete Transaction",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       console.log(error);
     }
   };

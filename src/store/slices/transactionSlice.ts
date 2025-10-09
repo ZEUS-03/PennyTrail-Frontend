@@ -1,3 +1,4 @@
+import { toast } from "@/hooks/use-toast";
 import { transactionService } from "@/services/transaction";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
@@ -7,22 +8,35 @@ interface TransactionState {
   error: string | null;
 }
 
+interface SyncTransactionsParams {
+  syncAll?: boolean;
+  maxResults?: number;
+}
+
 const initialState: TransactionState = {
   transactions: [],
   loading: false,
   error: null,
 };
 
-export const syncTransactions = createAsyncThunk(
+export const syncTransactions = createAsyncThunk<
+  object[],
+  SyncTransactionsParams | undefined
+>(
   "transactions/getTransactions",
-  async (_, { rejectWithValue }) => {
+  async ({ syncAll = true, maxResults = 50 }, { rejectWithValue }) => {
     try {
       const response = await transactionService.syncTransactions({
-        maxResults: 50,
-        syncAll: true,
+        maxResults,
+        syncAll,
       });
       return response.data;
     } catch (error) {
+      toast({
+        title: "Failed to Sync Emails",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
       return rejectWithValue({
         status: error.response?.status,
         message: error.response?.data?.message || error.message,

@@ -1,8 +1,8 @@
 import { authService } from "@/services/auth";
+import { User } from "@/types";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-
 interface AuthState {
-  user: object | null;
+  user: User;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
@@ -51,7 +51,7 @@ export const authSlice = createSlice({
       })
       .addCase(getSelfCall.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
       })

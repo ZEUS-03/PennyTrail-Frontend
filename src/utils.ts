@@ -1,3 +1,4 @@
+import { toast } from "./hooks/use-toast";
 import { authService } from "./services/auth";
 import { logout } from "./store/slices/authSlice";
 import { format } from "date-fns";
@@ -8,6 +9,11 @@ export const googleOAuth = async () => {
     const { authUrl } = response.data;
     window.location.href = authUrl;
   } catch (error) {
+    toast({
+      title: "Failed to Login",
+      description: "Something went wrong. Please try again.",
+      variant: "destructive",
+    });
     console.log(error);
   }
 };
@@ -16,17 +22,31 @@ export const routeUserToHome = (error, dispatch) => {
   if (error.response && error.response.status === 401) {
     dispatch(logout());
     window.location.href = "/";
+    toast({
+      title: "Session expired",
+      description: "Your session has expired. Please log in again.",
+      variant: "destructive",
+    });
   }
 };
 
 export function getPastMonths(count: number): string[] {
-  const months = [];
-  const now = new Date();
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(format(d, "MMM yyyy"));
+  try {
+    const months = [];
+    const now = new Date();
+    for (let i = count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(format(d, "MMM yyyy"));
+    }
+    return months;
+  } catch (error) {
+    toast({
+      title: "Failed to fetch data",
+      description: "Something went wrong. Please try again.",
+      variant: "destructive",
+    });
+    console.log(error);
   }
-  return months;
 }
 
 export function getThisWeekRange() {

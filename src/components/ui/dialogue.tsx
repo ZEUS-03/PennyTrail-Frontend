@@ -129,7 +129,6 @@ export default function TransactionModal({
       transactionDate: "",
     });
 
-    console.log(formData, "formData");
     onSubmit(formData);
     onOpenChange(false);
   };

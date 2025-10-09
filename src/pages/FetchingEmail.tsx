@@ -6,14 +6,10 @@ import { Mail, Shield, Check, ArrowRight, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { syncTransactions } from "@/store/slices/transactionSlice";
+import { toast } from "@/hooks/use-toast";
 
 const FetchingEmail = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [transactionLength, setTransactionLength] = useState({
-    loading: true,
-    error: null,
-    transactions: 0,
-  });
 
   const dispatch = useAppDispatch();
   const { transactions, loading, error } = useAppSelector(
@@ -24,9 +20,19 @@ const FetchingEmail = () => {
     const fetchTransactions = async () => {
       try {
         if (!transactions && !loading) {
-          await dispatch(syncTransactions());
+          await dispatch(
+            syncTransactions({
+              maxResults: 50,
+              syncAll: false,
+            })
+          );
         }
       } catch (error) {
+        toast({
+          title: "Failed to fetch transactions",
+          description: "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
         console.error("Error fetching transactions:", error);
       }
     };
