@@ -70,14 +70,14 @@ const Dashboard = () => {
 
   pastMonthTransactions?.weekData?.forEach((item: weekDataType, idx) => {
     if (item) {
-      const index = new Date(item._id).getDay() - 1;
-      weeklyData[index].amount = item.totalAmount;
+      const index = new Date(item._id).getDay();
+      weeklyData[index].amount = item?.totalAmount;
     }
   });
 
   const handleSyncEmail = async () => {
     const lastSyncDate = user.lastSyncDate
-      ? user.lastSyncDate.split("T")[0]
+      ? user?.lastSyncDate?.split("T")[0]
       : "";
     const date = new Date();
     // if (user && lastSyncDate && lastSyncDate === format(date, "yyyy-MM-dd")) {
@@ -137,7 +137,7 @@ const Dashboard = () => {
     const date = new Date(currentYear, item._id.month - 1); // JS months are 0-indexed
     return {
       month: format(date, "MMM yyyy"), // "Sep 2025"
-      amount: item.totalAmount,
+      amount: item?.totalAmount,
       type: item._id.type,
     };
   });

@@ -19,7 +19,7 @@ const FetchingEmail = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        if (!transactions && !loading) {
+        if (transactions.length === 0 && !loading) {
           await dispatch(
             syncTransactions({
               maxResults: 50,
