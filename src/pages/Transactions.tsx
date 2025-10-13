@@ -86,12 +86,18 @@ const Transactions = () => {
   }, []);
 
   const handleTransactionAddEdit = async (formData) => {
-    if (formData.id) {
+    if (formData._id) {
       handleTransactionEdit(formData);
     } else {
       handleAddTransaction(formData);
     }
   };
+
+  useEffect(() => {
+    if (!openEditModal) {
+      setSelectedTransaction(null);
+    }
+  }, [openEditModal]);
 
   const handleAddTransaction = async (formData) => {
     try {
