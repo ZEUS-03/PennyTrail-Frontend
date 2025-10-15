@@ -1,46 +1,51 @@
-# Welcome to project
+# PennyTrail: Your Smart Expense Tracker
 
-## Project info
+AI-powered expense tracking from Gmail transactions
 
-## How can I edit this code?
+## 🎥 Demo Video
+[Watch Demo](https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e)
 
-There are several ways of editing your application.
-Follow these steps:
+## ✨ Features
+- OAuth2 Google authentication
+- Automated email sync from Gmail
+- AI transaction classification
+- Real-time expense tracking
+- Interactive charts and analytics
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🖼️ Screenshots
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Dashboard
+![dashboard](https://github.com/user-attachments/assets/b9a2b625-1090-40e0-9e22-2f5da0effa6b)
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Transaction Analysis
+![transactions](https://github.com/user-attachments/assets/574b50e7-6628-49ba-b2c4-568f78fcc4f7)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+## 🏗️ Architecture
+- **Frontend:** React, Redux Toolkit, TailwindCSS
+- **Backend:** Node.js, Express, MongoDB
+- **APIs:** Gmail API, Google OAuth2
+- **AI/ML:** Transaction classification service
+- **Deployment:** Netlify (frontend), Render (backend)
+
+## 🔐 Security
+- Session-based authentication
+- HttpOnly cookies with SameSite=None
+- CORS protection
+- Rate limiting
+- Environment variable management
+
+## 🚀 Technical Highlights
+- Cross-domain cookie handling in production
+- OAuth2 flow with refresh token management
+- Reverse proxy configuration (trust proxy)
+- Real-time email processing
+- MongoDB aggregation pipelines for analytics
+
+## 📝 Note on "Unverified App"
+This is a personal project in Google's testing mode. 
+For demo purposes, contact me to be added as a test user.
+
+## 🔗 Links
+- **Live Demo:** [[Video Walkthrough](link)](https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e)
+- **Frontend:** https://pennytrail.netlify.app
 ```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
