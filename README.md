@@ -3,7 +3,11 @@
 AI-powered expense tracking from Gmail transactions
 
 ## 🎥 Demo Video
-[Watch Demo](https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e)
+[Watch Demo](https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e) |
+[Try app](https://pennytrail.netlify.app) 
+
+```This is a personal project in Google's testing mode. For demo purposes, contact me to be added as a test user.```
+
 
 ## ✨ Features
 - OAuth2 Google authentication
@@ -46,6 +50,5 @@ This is a personal project in Google's testing mode.
 For demo purposes, contact me to be added as a test user.
 
 ## 🔗 Links
-- **Live Demo:** [[Video Walkthrough](link)](https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e)
+- **Live Demo:** https://www.loom.com/share/4df29b6b5a374b2d8a92224592c981c6?sid=e5110ef8-94e4-48ad-8903-947a0182d62e
 - **Frontend:** https://pennytrail.netlify.app
-```
