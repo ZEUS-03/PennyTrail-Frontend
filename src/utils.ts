@@ -1,7 +1,9 @@
+import { isArrayBuffer } from "util/types";
 import { toast } from "./hooks/use-toast";
 import { authService } from "./services/auth";
 import { logout } from "./store/slices/authSlice";
 import { format } from "date-fns";
+import { PastMonthTransactions } from "./types";
 
 export const googleOAuth = async () => {
   try {
@@ -81,4 +83,176 @@ export function getThisQuarterRange() {
   const end = new Date(today.getFullYear(), quarterStartMonth + 3, 0); // last day of the quarter
 
   return { startDate: start, endDate: end };
+}
+
+export function isEmpty(obj: object) {
+  if (Array.isArray(obj)) {
+    return obj.length === 0;
+  }
+  return Object.keys(obj).length === 0;
+}
+
+const isDateInCurrentWeek = (date) => {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  const endOfWeek = new Date(now);
+  // Adjust according to your week's start (here: Monday)
+  startOfWeek.setDate(now.getDate() - now.getDay() + 1);
+  startOfWeek.setHours(0, 0, 0, 0);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+  return date >= startOfWeek && date <= endOfWeek;
+};
+
+export function mapLocalStorageData(stateSetter) {
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const dashboardData: PastMonthTransactions = {
+    lastMonthStats: [],
+    monthlyStats: [],
+    totalStats: [],
+    typeStats: [],
+    weekData: [],
+    year: null,
+  };
+
+  const storedData = JSON.parse(localStorage.getItem("transactions") || "[]");
+  const lastMonthStats = [
+    {
+      _id: null,
+      totalAmount: 0,
+      transactions: [],
+    },
+  ];
+  const monthlyStats = [];
+  const totalStats = [];
+  let typeStats = [];
+  for (const item of storedData) {
+    const itemMonth = new Date(item.transactionDate).getMonth();
+    const itemYear = new Date(item.transactionDate).getFullYear();
+    const monthlyStatsIndex = monthlyStats.findIndex(
+      (stat) => stat._id.month === itemMonth + 1
+    );
+    if (
+      item.transactionDate &&
+      itemMonth === currentMonth &&
+      itemYear === currentYear
+    ) {
+      lastMonthStats[0].transactions.push(item);
+      lastMonthStats[0].totalAmount += Number(item.amount);
+    }
+    if (monthlyStats && monthlyStatsIndex !== -1) {
+      monthlyStats[monthlyStatsIndex].totalAmount += Number(item.amount);
+      monthlyStats[monthlyStatsIndex].count++;
+    } else {
+      monthlyStats.push({
+        _id: {
+          month: itemMonth + 1,
+        },
+        totalAmount: Number(item.amount),
+        count: 1,
+      });
+    }
+    if (totalStats.length) {
+      totalStats[0].totalAmount += Number(item.amount);
+      totalStats[0].count++;
+    } else {
+      totalStats.push({
+        _id: item.currency,
+        totalAmount: Number(item.amount),
+        count: 1,
+      });
+    }
+  }
+  if (lastMonthStats.length && lastMonthStats[0].transactions.length) {
+    typeStats = Object.values(
+      lastMonthStats[0].transactions.reduce((acc, txn) => {
+        const key = txn.transactionType;
+        if (!acc[key]) {
+          acc[key] = { _id: key, totalAmount: 0, count: 0 };
+        }
+        acc[key].totalAmount += Number(txn.amount);
+        acc[key].count += 1;
+        return acc;
+      }, {})
+    );
+  }
+  const allTransactions = lastMonthStats.flatMap((item) => item.transactions);
+
+  // Filtering only current week's
+  const thisWeeksTxns = allTransactions.filter((txn) =>
+    isDateInCurrentWeek(new Date(txn.transactionDate))
+  );
+
+  const weekData = Object.values(
+    thisWeeksTxns.reduce((acc, txn) => {
+      const dateKey = new Date(txn.transactionDate).toISOString().split("T")[0]; // YYYY-MM-DD
+      if (!acc[dateKey]) acc[dateKey] = { _id: dateKey, totalAmount: 0 };
+      acc[dateKey].totalAmount += Number(txn.amount);
+      return acc;
+    }, {})
+  );
+
+  stateSetter({
+    lastMonthStats,
+    monthlyStats,
+    totalStats,
+    typeStats,
+    weekData,
+    year: currentYear,
+  });
+}
+
+export function isDateInCurrentMonth(date) {
+  const current = new Date();
+  return (
+    date.getMonth() === current.getMonth() &&
+    date.getFullYear() === current.getFullYear()
+  );
+}
+
+export function isDateInCurrentQuarter(date) {
+  const current = new Date();
+  const currentQuarter = Math.floor(current.getMonth() / 3);
+  const dateQuarter = Math.floor(date.getMonth() / 3);
+  return (
+    dateQuarter === currentQuarter &&
+    date.getFullYear() === current.getFullYear()
+  );
+}
+
+export function filterTransactionsByDateRange(transactions, rangeType) {
+  const rangeChecks = {
+    week: isDateInCurrentWeek,
+    month: isDateInCurrentMonth,
+    quarter: isDateInCurrentQuarter,
+  };
+
+  const checkFn = rangeChecks[rangeType];
+  if (!checkFn) return transactions;
+
+  return transactions.filter((txn) => checkFn(new Date(txn.transactionDate)));
+}
+
+export function filterTransactions(
+  transactions,
+  { selectedTimeRange, selectedCategory, searchQuery }
+) {
+  let filteredTransactions = filterTransactionsByDateRange(
+    transactions,
+    selectedTimeRange
+  );
+
+  if (selectedCategory && selectedCategory !== "all") {
+    filteredTransactions = filteredTransactions.filter(
+      (txn) => txn.transactionType === selectedCategory
+    );
+  }
+  if (searchQuery) {
+    filteredTransactions = filteredTransactions.filter((txn) =>
+      txn.merchant.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+
+  return filteredTransactions;
 }

@@ -6,6 +6,7 @@ interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  isGuest: boolean;
 }
 
 const initialState: AuthState = {
@@ -13,6 +14,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   loading: false,
   error: null,
+  isGuest: false,
 };
 
 export const getSelfCall = createAsyncThunk(
@@ -40,6 +42,9 @@ export const authSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
+    },
+    setGuest: (state, action: PayloadAction<boolean>) => {
+      state.isGuest = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -76,5 +81,5 @@ export const authSlice = createSlice({
   },
 });
 
-export const { logout, setError } = authSlice.actions;
+export const { logout, setError, setGuest } = authSlice.actions;
 export default authSlice.reducer;
