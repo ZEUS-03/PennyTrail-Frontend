@@ -13,7 +13,7 @@ const ProtectedRoute = ({
   children,
   redirectPath = "/",
 }: ProtectedRouteProps) => {
-  const { user, isAuthenticated, loading } = useAppSelector(
+  const { user, isAuthenticated, loading, isGuest } = useAppSelector(
     (state) => state.auth
   );
   const dispatch = useAppDispatch();
@@ -21,7 +21,7 @@ const ProtectedRoute = ({
 
   useEffect(() => {
     const checkAuth = async () => {
-      if (!isAuthenticated && !loading && !initialCheckDone) {
+      if (!isAuthenticated && !loading && !initialCheckDone && !isGuest) {
         await dispatch(getSelfCall());
       }
       setInitialCheckDone(true);
@@ -33,7 +33,7 @@ const ProtectedRoute = ({
     return <>Loading</>;
   }
 
-  if (!user || !isAuthenticated) {
+  if (!isGuest && (!user || !isAuthenticated)) {
     return <Navigate to={redirectPath} replace />;
   }
 
