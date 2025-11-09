@@ -24,7 +24,7 @@ export const extractTransaction = async (transaction) => {
 };
 export const extractionServerHealth = async () => {
   try {
-    const response = await transactionPredictionApi.get("/health");
+    const response = await transactionPredictionApi.head("/health");
     return response.data;
   } catch (error) {
     console.log(error);
@@ -32,7 +32,7 @@ export const extractionServerHealth = async () => {
 };
 export const predictionServerHealth = async () => {
   try {
-    const response = await transactionPredictionApi.get("/health");
+    const response = await transactionPredictionApi.head("/health");
     return response.data;
   } catch (error) {
     console.log(error);
