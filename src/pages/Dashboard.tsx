@@ -29,6 +29,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   LogOut,
+  Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -275,11 +276,10 @@ const Dashboard = () => {
                   >
                     {loading ? (
                       <>
-                        <div
-                          className="spinner"
+                        <Loader2
+                          className="mr-2 h-5 w-5 animate-spin"
                           style={{ marginRight: "8px" }}
-                        ></div>
-                        <span className="hidden lg:inline">Syncing...</span>
+                        ></Loader2>
                       </>
                     ) : (
                       <>
@@ -751,13 +751,13 @@ const Dashboard = () => {
         footer={
           <div className="flex justify-end gap-3">
             <Button
-              variant="destructive"
+              // variant="destructive"
               onClick={() => setShowLogoutModal(false)}
             >
               Cancel
             </Button>
             <Button
-              variant="default"
+              variant="destructive"
               onClick={() => {
                 dispatch(setGuest(false));
                 localStorage.removeItem("transactions");

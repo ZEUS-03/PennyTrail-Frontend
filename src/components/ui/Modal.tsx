@@ -37,7 +37,7 @@ const Modal: React.FC<ModalProps> = ({
           onClick={onClose}
         >
           <motion.div
-            className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-[#f2f2f2] shadow-2xl border border-gray-800 text-black`}
+            className={`relative w-full ${sizeClasses[size]} rounded-2xl bg-[#f2f2f2] shadow-2xl border border-gray-400 text-black`}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -45,11 +45,11 @@ const Modal: React.FC<ModalProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             {title && (
-              <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
-                <h2 className="text-lg font-semibold">{title}</h2>
+              <div className="flex items-center justify-between border-b border-gray-300 bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-5 rounded-t-2xl">
+                <h2 className="text-lg font-semibold text-white">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:shadow-lg hover:text-black transition"
+                  className="text-gray-200 hover:shadow-lg hover:text-white transition"
                 >
                   <X size={20} />
                 </button>
@@ -59,7 +59,7 @@ const Modal: React.FC<ModalProps> = ({
             <div className="p-5">{children}</div>
 
             {footer && (
-              <div className="px-5 py-3 border-t border-gray-700 flex justify-end gap-3">
+              <div className="px-5 py-3 border-t border-slate-200 flex justify-end gap-3">
                 {footer}
               </div>
             )}

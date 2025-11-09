@@ -13,12 +13,15 @@ import {
   Zap,
   ClockIcon,
 } from "lucide-react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import heroImage from "@/assets/hero-dashboard.jpg";
+import { Link, Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useEffect, useState } from "react";
 import { getSelfCall, setGuest } from "@/store/slices/authSlice";
 import { googleOAuth } from "@/utils";
+import {
+  extractionServerHealth,
+  predictionServerHealth,
+} from "@/services/classification";
 
 const Welcome = () => {
   const dispatch = useAppDispatch();
@@ -32,6 +35,10 @@ const Welcome = () => {
         await dispatch(getSelfCall());
       }
       setInitialCheckDone(true);
+
+      // check health of server on startup
+      predictionServerHealth();
+      extractionServerHealth();
     };
     checkAuth();
   }, []);
