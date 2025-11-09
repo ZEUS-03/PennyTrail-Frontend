@@ -15,3 +15,15 @@ export const protectedApi = axios.create({
     "Content-Type": "application/json",
   },
 });
+export const transactionPredictionApi = axios.create({
+  baseURL: import.meta.env.VITE_API_TRANSACTION_CLASSIFIER_BASE,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+export const transactionExtractionApi = axios.create({
+  baseURL: import.meta.env.VITE_API_TRANSACTION_EXTRACTOR_BASE,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
