@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getSelfCall } from "@/store/slices/authSlice";
+import DashboardShimmer from "../DashboardShimmer";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -30,7 +31,7 @@ const ProtectedRoute = ({
   }, []);
 
   if (!initialCheckDone || loading) {
-    return <>Loading</>;
+    return <DashboardShimmer />;
   }
 
   if (!isGuest && (!user || !isAuthenticated)) {
